@@ -1,0 +1,5 @@
+#!/usr/local/bin/bash
+AASM_HOME=/home/cadtools5/aasm
+FLNME=`echo $1 | sed s/[.]s$//`
+$AASM_HOME/aasm -lk ${FLNME}.kmd $1
+

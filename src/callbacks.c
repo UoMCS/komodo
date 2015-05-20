@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*                Name:           callbacks.c                                 */
-/*                Version:        1.5.0                                       */
-/*                Date:           26/07/2007                                  */
+/*                Version:        1.5.1                                       */
+/*                Date:           24/09/2010                                  */
 /*                Functions called on actions from the GTK interface          */
 /*                                                                            */
 /*============================================================================*/
@@ -66,8 +66,16 @@ typedef struct section_list_name      /* Record for listing ELF section info. */
 
 const SECTION_LIST_SIZE = sizeof(elf_section_list);
 
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/* ELF definitions                                                            */
+
+#define ELF_PROGBITS   1
 #define ELF_SYMTAB     2
 #define ELF_DYNSYM    11
+
+#define SHF_WRITE  1
+#define SHF_ALLOC  2
+#define SHF_EXEC   4
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 
@@ -330,6 +338,9 @@ return result;
 
 /*----------------------------------------------------------------------------*/
 
+boolean elf_loadable(elf_section_list *pTemp)
+{ return ((pTemp->flags & SHF_ALLOC) != 0) && (pTemp->type == ELF_PROGBITS); }
+
 boolean read_elf(char *filename)
 {
 int error;                    // Enumerate @@@
@@ -348,12 +359,13 @@ else
 
   total  = 0;
   loaded = 0;
+
   for (pTemp = elf_sections; pTemp != NULL; pTemp = pTemp->pNext)
-    if ((pTemp->flags & 2) != 0)                        /* Loadable attribute */
+    if (elf_loadable(pTemp))                /* Loadable attribute and is code */
       total = total + pTemp->size;                  /* Measure length to load */
 
   for (pTemp = elf_sections; pTemp != NULL; pTemp = pTemp->pNext)
-    if ((pTemp->flags & 2) != 0)                        /* Loadable attribute */
+    if (elf_loadable(pTemp))                /* Loadable attribute and is code */
       loaded = elf_section_load(fp, pTemp, loaded, total);
                                                    /* Chain down section list */
 
@@ -854,7 +866,9 @@ return TRUE;						// Return error flag  @@@
 void callback_button_compile(GtkButton *button, gpointer entry)
 {
 GList *list;
-char *filename;
+char  *filename;
+pid_t  process;
+int    status;
 
 if (TRACE > 5) g_print("callback_button_compile\n");
 
@@ -864,38 +878,46 @@ if (compile_lock == FREE)                       /* Check if already compiling */
   filename = gtk_entry_get_text(GTK_ENTRY(entry));  /* Get ptr; no allocation */
   if (filename[0] != '\0')
     {
-    if (!fork())                                           /* If daughter ... */
-      {
-      close(1);
-      dup2(compile_communication[1], 1);
-      close(2);
-      dup2(compile_communication[1], 2);
-      close(0);
-      if (VERBOSE) g_print("Compiling: %s\n", filename);
-      setpgid(0, 0);
-      execlp(compile_script,compile_script,filename,board->cpu_name,"0",NULL);
-      _exit(0);
-      }
+    process = fork();
+    if (process == -1) g_print("\a");                   /* Warning of failure */
     else
-      {                                                      /* If parent ... */
-      int i;
-      char buffer[200];
-      char *pTemp1, *pTemp2;
-
-      maintain_filename_list(entry, filename, TRUE);     /* Log filename used */
-
-      pTemp1 = g_strdup(filename);         /* Translate filename to load name */
-      if (pTemp1 != NULL)
+      {
+      if (process == 0)                                    /* If daughter ... */
         {
-        for (i=strlen(pTemp1); (i>0)&&(pTemp1[i]!='/')&&(pTemp1[i]!='.'); i--);
-                            /* Reverse search for start of extension - if any */
-        if (pTemp1[i] == '.') pTemp1[i] = '\0';/* Trim off any ".*" extension */
-
-        pTemp2 = g_strconcat(pTemp1, OBJECT_EXT, NULL);		// @@@ re-extend properly @@@
-        gtk_entry_set_text(GTK_ENTRY(centry_load), pTemp2);
-        g_free(pTemp2);
+        close(1);
+        dup2(compile_communication[1], 1);
+        close(2);
+        dup2(compile_communication[1], 2);
+        close(0);
+        if (VERBOSE) g_print("Compiling: %s\n", filename);
+        setpgid(0, 0);
+        execlp(compile_script,compile_script,filename,board->cpu_name,"0",NULL);
+        _exit(0);
         }
-      g_free(pTemp1);
+      else
+        {                                                    /* If parent ... */
+        int i;
+        char *pTemp1, *pTemp2;
+
+        maintain_filename_list(entry, filename, TRUE);   /* Log filename used */
+
+        pTemp1 = g_strdup(filename);       /* Translate filename to load name */
+        if (pTemp1 != NULL)
+          {
+          for (i=strlen(pTemp1); (i>0)&&(pTemp1[i]!='/')&&(pTemp1[i]!='.'); i--);
+                            /* Reverse search for start of extension - if any */
+          if (pTemp1[i]=='.') pTemp1[i] = '\0';/* Trim off any ".*" extension */
+
+          pTemp2 = g_strconcat(pTemp1, OBJECT_EXT, NULL);	// @@@ re-extend properly @@@
+          gtk_entry_set_text(GTK_ENTRY(centry_load), pTemp2);
+          g_free(pTemp2);
+          }
+        g_free(pTemp1);
+        }
+      waitpid(process, &status, 0);          /* Wait for daughter to complete */
+// If compiles start to take a long time, the wait should be exported into
+// a signal handler and the child PID sent there.  This prevents 'defunct'
+// processes hanging around.                                              @@@@@@
       }
     }
   else g_print("\a");                                   /* Warning of failure */
@@ -1702,6 +1724,9 @@ memwin = view_getmemwindowptr(GTK_WIDGET(clist));
                                             /* bit of calculation required... */
 new_number_of_rows = (clist->clist_window_height / clist->row_height) - 1;
 						// This is too many in large window @@@
+
+// Clip because 'gtk_clist_insert' fails if list has become empty @@@
+if (new_number_of_rows < 1) new_number_of_rows = 1;
 
 gtk_clist_freeze(GTK_CLIST(memwin->clist_ptr));
                                /* Freeze the current state of the memory list */
@@ -3157,7 +3182,8 @@ void callback_main_quit(gpointer ignore, gpointer ignore2)
 {
 if (TRACE > 5) g_print("callback_main_quit\n");
 
-if (emulator_PID != 0) kill(emulator_PID, SIGKILL);
+//if (emulator_PID != 0) kill(emulator_PID, SIGKILL);
+if (emulator_PID != 0) kill(emulator_PID, SIGTERM);
                              /* If emulator in use shut down emulator process */
 
 exit(1);
@@ -3249,6 +3275,31 @@ window_ptr = view_create_symbol_window(&hints);
 
 return;
 }
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+void callback_symbol_window_sort(GtkWidget *clist,
+                                 gint column,        /* Row/column swapped    */
+                                 gint row,           /*  from documentation?! */
+                                 GdkEventButton *event,
+                                 gpointer data)
+{
+int i;
+
+if (row == 0)                                    /* Button at column head (?) */
+  {
+  switch (column)
+    {
+    case 0: misc_set_symbol_sort(1); break;
+    case 1: misc_set_symbol_sort(2); break;
+    case 2: misc_set_symbol_sort(0); break;
+    }
+  view_refresh_symbol_clist(clist);
+//###
+  }
+}
+
 
 /*                                                                            */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/

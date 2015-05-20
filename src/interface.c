@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*                Name:           interface.c                                 */
-/*                Version:        1.5.0                                       */
-/*                Date:           10/8/2007                                   */
+/*                Version:        1.5.1                                       */
+/*                Date:           24/9/2010                                   */
 /*                The interface between the GUI and the client                */
 /*                                                                            */
 /*============================================================================*/
@@ -57,6 +57,8 @@ char *dotkomodo =                // This is very dirty
 #define COMMANDLINE_TERMINATE  1    /* Probably should be enumerated type @@@ */
 #define COMMANDLINE_ERROR      2
 
+#define IN_POLL_TIMEOUT  1000
+#define OUT_POLL_TIMEOUT  100                         /* 100ms iteration time */
 
 /* Non-exported prototypes                                                    */
 void init_global_vars(void);
@@ -71,6 +73,7 @@ int commandline(int argc, char *argv[]);   /* Process command line parameters */
 void setup(void);                                          /* Set up function */
 
 void dead_child(int);
+void dead_me(int);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 /* Non-exported variables                                                     */
@@ -465,7 +468,7 @@ if (version >= 0)
     {        /* Check board version and return "TRUE" if version is as before */
     if (board_version == -1)
       {   /* Recovering from unavailability really need new features etc. @@@ */
-g_print("Board version recovered to: %d\n", version);
+ //g_print("Board version recovered to: %d\n", version);
       board_version = version;
       }
     else
@@ -1366,23 +1369,60 @@ fixed_font = NULL;	// Hack for LJ (31/3/05)	@@@@
 
   /*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***/
 
+#define EMUL_ARGS 100
+
   void init_emulation()
   {
+  struct sigaction cleanup;
+
+  timeout_in  = -1;                                /* No timeout for emulator */
+  timeout_out = -1;
+
   pipe(board_emulation_communication_from);
   read_pipe = board_emulation_communication_from[0];
   pipe(board_emulation_communication_to);      /* 'man pipe' for more details */
   write_pipe = board_emulation_communication_to[1];
                                        /* set up the pipes to allow emulation */
 
+
+  //XSV_Cleanup = serial_crash;        /* setting up the crash handling function */
+
+//cleanup.sa_handler = (void (*)()) XSV_Cleanup;
+cleanup.sa_handler = &dead_me;
+sigemptyset(&cleanup.sa_mask);
+cleanup.sa_flags = 0;
+
+sigaction(SIGINT,  &cleanup, NULL);
+sigaction(SIGHUP,  &cleanup, NULL);
+sigaction(SIGTERM, &cleanup, NULL);
+sigaction(SIGSEGV, &cleanup, NULL);
+sigaction(SIGBUS,  &cleanup, NULL);
+
   emulator_PID = fork();
   signal(SIGCHLD, dead_child);  /* Register procedure called on child's death */
   if (emulator_PID == 0)                                   /* If daughter ... */
     {
+    int i;
+    char *ptr;
+    char *args[EMUL_ARGS];
+
+    ptr = emulator_prog;        /* Chop emulator command string into elements */
+    i = 0;
+
+    while ((*ptr != '\0') && (i < EMUL_ARGS + 1))
+      {
+      args[i++] = ptr;                           /* Record start of substring */
+      while ((*ptr != ' ') && (*ptr != '\0')) ptr++;   /* Work through string */
+      while (*ptr == ' ') { *ptr = '\0'; ptr++; }    /* Null following spaces */
+      }
+    args[i] = NULL;                                        /* Terminate array */
+
     close(1);
     dup2(board_emulation_communication_from[1], 1);
     close(0);
     dup2(board_emulation_communication_to[0], 0);
-    execlp(emulator_prog, emulator_prog, NULL);
+//    execlp(emulator_prog, emulator_prog, NULL);
+    execvp(emulator_prog, args);
     exit(0);
     }
   else if (VERBOSE) g_print("Emulating with : %s\n", "komodo_emulate");
@@ -1462,6 +1502,9 @@ misc_init_symbol_table();
 if (open_dot_komodo())                    /* get the .komodo input, else fail */
   {
   set_style();
+
+  timeout_in = IN_POLL_TIMEOUT;                             /* Default values */
+  timeout_in = OUT_POLL_TIMEOUT;       /* Can be customised in the init calls */
 
   switch (interface_type)
     {
@@ -1691,7 +1734,7 @@ unsigned int dummy;
 if (TRACE > 5) g_print("run_board\n");
 
 board_state = board_enq(&dummy);
-if (board_state == CLIENT_STATE_RUNNING_SWI    /* Might need modification @@@ */
+if (board_state == CLIENT_STATE_RUNNING_SVC    /* Might need modification @@@ */
  || board_state == CLIENT_STATE_RUNNING
  || board_state == CLIENT_STATE_STEPPING
  || board_state == CLIENT_STATE_MEMFAULT
@@ -1873,10 +1916,23 @@ return ch;
 
 void dead_child(int arg)
 {
+int status;
+
+/* prevent dead child from becoming a zombie */
+// waitpid(-1, &status, 0);			// Commented as bodge: awaiting LAP 12/3/10 @@@@
 if (TRACE > 2) g_print("Child process died\n");
 return;
 }
 
+void dead_me(int signum)                   /* Crashing with emulator as child */
+{
+int status;
+
+kill(emulator_PID, SIGTERM);
+waitpid(emulator_PID, &status, 0);/* prevent dead child from becoming a zombie*/
+
+exit(1);
+}
 
 /*                              end of interface.c                            */
 /*============================================================================*/

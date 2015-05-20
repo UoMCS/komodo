@@ -1,0 +1,6 @@
+# Sample 'jimulator' configuration file
+-l vscreen.so 320 240 2 555 6 123 32
+#-l i2cmaster.so
+-l lib_comp15111.so
+-m 1m
+#-s 123 0x100000 153602

@@ -4,7 +4,7 @@
 /*  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 /*		Name:		serial.h				*/
 /*		Version:	1.3.0					*/
-/*		Date:		19/07/2007				*/
+/*		Date:		24/09/2010				*/
 /*  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 #ifndef SERIAL_H
@@ -54,6 +54,10 @@ struct termios serial_originalportsettings;
 char *portname;
 //GList *serial_list_2_board;
 //GList *serial_list_2_computer;
+
+int timeout_in;
+int timeout_out;
+
 
 /* prototypes: */
 

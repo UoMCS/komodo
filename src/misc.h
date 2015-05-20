@@ -4,7 +4,7 @@
 /*  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 /*                Name:           misc.h                                */
 /*                Version:        1.5.0                                 */
-/*                Date:           20/07/2007                            */
+/*                Date:           21/09/2009                            */
 /*  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 #ifndef MISC_H
@@ -32,8 +32,8 @@ typedef struct symbol_name
   long        value;                                        /* Symbol's value */
   symbol_type sym_type;/* Some indication of the symbol's means of definition */
   struct symbol_name *pDef;                            /* Next defined symbol */
-//  struct symbol_name *pAlpha;                   /* Alphabetically next symbol */
-//  struct symbol_name *pVal;                             /* Next valued symbol */
+  struct symbol_name *pAlpha;                   /* Alphabetically next symbol */
+  struct symbol_name *pVal;                             /* Next valued symbol */
 }
 symbol;
 
@@ -80,6 +80,7 @@ int    view_find_reg_name(char*, reg_bank*);
 int    view_check_button(GtkWidget*);
 
 void    misc_init_symbol_table(void);
+void    misc_set_symbol_sort(int);
 void    misc_flush_symbol_table(void);
 int     misc_count_symbols(void);
 void    misc_add_symbol(char*, long, symbol_type);

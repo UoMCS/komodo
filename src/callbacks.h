@@ -4,7 +4,7 @@
 /*  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 /*                Name:           callbacks.h                           */
 /*                Version:        1.5.0                                 */
-/*                Date:           20/07/2007                            */
+/*                Date:           18/08/2009                            */
 /*  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 #ifndef CALLBACKS_H
@@ -127,6 +127,8 @@ int compile_communication[2];
 
 void callback_memory_window_create(gpointer, gpointer);
 void callback_symbol_window_create(gpointer, gpointer);
+void callback_symbol_window_sort(GtkWidget*, gint, gint,
+                                 GdkEventButton*, gpointer);
 void callback_memory_window_destroy(gpointer, gpointer);
 void callback_symbol_window_destroy(gpointer, gpointer);
 

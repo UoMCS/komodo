@@ -1,0 +1,34 @@
+#! /bin/bash
+
+#export KMD_HOME=/home/cadtools5/komodo
+export KMD_HOME=/home/cadtools5/KMD
+export KMD_DIR=$KMD_HOME/custom
+export LD_LIBRARY_PATH=$KMD_HOME/lib
+PROG=`basename $0`
+case $# in
+1) ;;
+*)  echo "Use $PROG <3 ,4 or 5 digit course number> e.g. $PROG 10031" 
+exit;;
+esac
+
+case $1 in
+103|1031|10031|COMP10031) PROJDIR=CS103 ;;
+124|1242|10242|COMP10242) PROJDIR=COMP10242 ;;
+606|60062|COMP60062)      PROJDIR=COMP60062 ;;
+390|3900) PROJDIR=CS390 ;;
+226|2262|20262|COMP20262) PROJDIR=COMP20262 ;;
+15111|COMP15111)  PROJDIR=COMP15111 ;;
+32111|COMP32111)  PROJDIR=COMP32111 ;;
+*) echo $1: Unknown course;  exit ;;
+esac
+
+case $PROJDIR in
+#COMP15111)     $KMD_HOME/komodo -i -e $KMD_HOME/jimulator ;;
+COMP15111)  $KMD_HOME/bin/kmd -k $KMD_HOME/custom/dot_komodo_15111 -e "$KMD_HOME/bin/jimulator -l $KMD_HOME/lib/lib_comp15111.so" ;;
+COMP10242|COMP20262) $KMD_HOME/bin/kmd -i ;;
+COMP32111) export PATH=$PATH:/home/cadtools5/vscreen/bin;
+           $KMD_HOME/bin/kmd -i -e "$KMD_HOME/bin/jimulator -o $KMD_HOME/custom/sample_config" ;;
+COMP60062) cd $HOME/COMP60062/TLM ; $KMD_HOME/komodo -i -n ;;
+*) echo $1: Unknown course;  exit ;;
+esac
+

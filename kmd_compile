@@ -1,0 +1,12 @@
+#!/bin/bash
+
+CADTOOLS5=/home/cadtools5
+if [ -d /opt/cadtools5/ ]
+then CADTOOLS5=/opt/cadtools5
+fi
+
+
+AASM_HOME=${CADTOOLS5}/komodo
+FLNME=`echo $1 | sed s/[.]s$//`
+$AASM_HOME/aasm -lk ${FLNME}.kmd $1
+

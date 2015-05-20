@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*                Name:           misc.c                                      */
 /*                Version:        1.5.0                                       */
-/*                Date:           20/07/2007                                  */
+/*                Date:           21/08/2009                                  */
 /*                Misc. functions mainly hex and binary conversions           */
 /*                                                                            */
 /*============================================================================*/
@@ -19,7 +19,10 @@
 /*----------------------------------------------------------------------------*/
 /* Definitions only used locally                                              */
 
+int symbol_order;           /* Sort order for symbols (needs one/window? @@ ) */
 symbol *symbol_table;            /* A symbol table that is made up of symbols */
+symbol *symbol_table_alpha;                /* List head sorted alphabetically */
+symbol *symbol_table_value;                      /* List head sorted by value */
 int symbol_count;                        /* Number of symbols in symbol table */
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
@@ -563,9 +566,16 @@ return (button != NULL)
 void misc_init_symbol_table(void)
 {
 symbol_table = NULL;
+symbol_table_alpha = NULL;
+symbol_table_value = NULL;
+symbol_order = 0;
 symbol_count = 0;
 return;
 }
+
+/*----------------------------------------------------------------------------*/
+
+void misc_set_symbol_sort(int i) { symbol_order = i; return; }
 
 /*----------------------------------------------------------------------------*/
 
@@ -596,19 +606,48 @@ int misc_count_symbols(void) { return symbol_count; }
 
 void misc_add_symbol(char *name, long value, symbol_type sym_type)
 {
-symbol *pSym, *pNew;
+symbol *pSym, *pNew, *pPrev;
 
 pNew = g_new(symbol, 1);
 pNew->name     = g_strdup(name);
 pNew->value    = value;
 pNew->sym_type = sym_type;
 pNew->pDef     = NULL;
+pNew->pAlpha   = NULL;
+pNew->pVal     = NULL;
 
-if (symbol_table == NULL) symbol_table = pNew;
+if (symbol_table == NULL)
+  {                                  /* First entry so everything links there */
+  symbol_table = pNew;
+  symbol_table_alpha = pNew;
+  symbol_table_value = pNew;
+  }
 else
   {                                                         /* Append on list */
   for (pSym = symbol_table; pSym->pDef != NULL; pSym = pSym->pDef);
   pSym->pDef = pNew;
+
+  pPrev = NULL;                                /* Search down alphabetic list */
+  pSym = symbol_table_alpha;
+  while ((pSym != NULL) && (strcasecmp(name, pSym->name) >= 0))
+    {
+    pPrev = pSym;
+    pSym = pSym->pAlpha;
+    }
+  pNew->pAlpha = pSym;                                   /* Link in new value */
+  if (pPrev == NULL) symbol_table_alpha = pNew;
+  else               pPrev->pAlpha      = pNew;
+
+  pPrev = NULL;                                     /* Search down value list */
+  pSym = symbol_table_value;
+  while ((pSym != NULL) && (value >= pSym->value))
+    {
+    pPrev = pSym;
+    pSym = pSym->pVal;
+    }
+  pNew->pVal = pSym;                                     /* Link in new value */
+  if (pPrev == NULL) symbol_table_value = pNew;
+  else               pPrev->pVal        = pNew;
   }
 
 symbol_count++;
@@ -630,13 +669,11 @@ symbol *pSym;
 
 found_flag = FALSE;
 
-for (pSym = symbol_table; pSym != NULL; pSym = pSym->pDef)
+for (pSym = symbol_table; (pSym != NULL) && !found_flag; pSym = pSym->pDef)
   {
-  found_flag = (strcasecmp(pSym->name, name) == 0);
-  if (found_flag) break;
+  found_flag = (strcmp(pSym->name, name) == 0); // Case sensitivity restored
+  if (found_flag) *value = (int) pSym->value;
   }
-
-if (found_flag) *value = (int) pSym->value;
 
 return found_flag;
 }
@@ -677,7 +714,25 @@ symbol *find_sym(int i)
 {
 symbol *pSym;
 
-for (pSym = symbol_table; (pSym != NULL) && (i > 0) ; i--, pSym = pSym->pDef);
+switch (symbol_order)
+  {
+  case 0:  for (pSym = symbol_table;
+               (pSym != NULL) && (i > 0);
+                i--, pSym = pSym->pDef);
+           break;
+  case 1:  for (pSym = symbol_table_alpha;
+               (pSym != NULL) && (i > 0);
+                i--, pSym = pSym->pAlpha);
+           break;
+  case 2:  for (pSym = symbol_table_value;
+               (pSym != NULL) && (i > 0);
+                i--, pSym = pSym->pVal);
+           break;
+  default: for (pSym = symbol_table;
+               (pSym != NULL) && (i > 0);
+                i--, pSym = pSym->pDef);
+           break;
+  }
 return pSym;  
 }
 

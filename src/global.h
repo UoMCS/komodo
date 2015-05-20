@@ -1,4 +1,4 @@
-/* Last modified: 20/7/2007                                                   */
+/* Last modified: 18/8/2009                                                   */
 /* Headers for shared definitions etc.                                        */
 /* Use until we can get things properly scoped.     @@@                       */
 
@@ -26,6 +26,9 @@
 #define SOURCE_WINDOW_MIN_HEIGHT   100
 #define SOURCE_WINDOW_MAX_WIDTH    700
 #define SOURCE_WINDOW_MAX_HEIGHT  1000
+
+#define SYMBOL_WINDOW_X 1000			// These need reconciling @@@
+#define SYMBOL_WINDOW_Y  600
 
 #define SYMBOL_WINDOW_BASE_WIDTH   300
 #define SYMBOL_WINDOW_BASE_HEIGHT   50

@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*                Name:           view.c                                      */
 /*                Version:        1.5.0                                       */
-/*                Date:           15/08/2007                                  */
+/*                Date:           21/08/2007                                  */
 /*                General interface with the graphical front end.             */
 /*                                                                            */
 /*============================================================================*/
@@ -59,7 +59,7 @@ typedef void (*callback_button_go_fn) (GtkButton *button, gpointer steps);
 typedef enum {HORIZONTAL, VERTICAL} orientation;
 
 int call_number_to_notebook = 0;
-char *symbol_data[] = { "Symbol", "Value", "Type" };
+char *symbol_data[] = { "Symbol", "Value", "Definition" };
 
     /* Will keep count of the number of calls to notebook in the display list */
 
@@ -127,7 +127,6 @@ GtkWidget *view_steplabel; /* the labels that reports the current step number */
 
 GtkWidget *centry_compile;          /* the current file entry for compilation */
 //GtkWidget *centry_load;                 /* the current file entry for loading */
-
 
 /******************************************************************************/
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
@@ -1213,7 +1212,7 @@ g_timeout_add(POLLING_PERIOD, callback_update_comms, terminal);
 if (terminal->dev_number >= TERMINAL_UPPER_BOUND)
   {                     /* we won't allow terminal as 20th feature or higher */
   g_print("Terminal feature found at predefined upper bound.\n");
-  exit(1);            // WHY???  @@@
+//  exit(1);            // WHY???  @@@
   }
 else
   text_in_terminal[terminal->dev_number] = text;
@@ -2081,7 +2080,7 @@ int i, sym_count;
 if (TRACE > 5) g_print("view_create_symbol_window\n");
 
 new_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-gtk_window_set_default_size(GTK_WINDOW(new_window), MEM_WINDOW_X, MEM_WINDOW_Y);
+gtk_window_set_default_size(GTK_WINDOW(new_window), SYMBOL_WINDOW_X, SYMBOL_WINDOW_Y);
 gtk_window_set_position(GTK_WINDOW(new_window), GTK_WIN_POS_NONE);
 gtk_object_set_data(GTK_OBJECT(new_window), "window", new_window);
 gtk_window_set_geometry_hints(GTK_WINDOW(new_window),
@@ -2114,9 +2113,11 @@ for (i = 0; i < sym_count; i++)                       /* Put up each row (??) */
 
 view_refresh_symbol_clist(clist);                    /* Put values into place */
 
-label = column_label("Symbol", clist, 0, 200);
-label = column_label("Value",  clist, 1, 100);
-label = column_label("Type",   clist, 2, 100);
+label = column_label(symbol_data[0], clist, 0, 200);
+label = column_label(symbol_data[1], clist, 1, 100);
+label = column_label(symbol_data[2], clist, 2, 100);
+gtk_signal_connect(GTK_OBJECT(clist), "click_column",
+                   callback_symbol_window_sort, NULL);/* Clicking cols. sorts */
 
 gtk_widget_show(clist);
 gtk_clist_column_titles_show(GTK_CLIST(clist));

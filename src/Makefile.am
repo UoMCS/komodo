@@ -19,7 +19,8 @@ kmd_SOURCES = \
 	breakview.c  breakview.h\
 	dotkomodo.string\
 	definitions.h global.h\
-	viewfuncs.c viewfuncs.h\
+	viewfuncs.c\
+	states.h\
 	pixmap.c pixmap.h\
 	evaluate.c
 
@@ -30,9 +31,12 @@ flash_SOURCES = serial.c serial.h\
 
 flash_LDADD = @GTK_LIBS@
 
-jimulator_SOURCES =   jimulator.c 
+jimulator_SOURCES = \
+	jimulator.c\
+	address_spaces.h\
+	vscreen.c vscreen.h
 
-jimulator_LDADD = 
+jimulator_LDADD = @GTK_LIBS@
 
 EXTRA_DIST = sample.komodo parse.pl
 

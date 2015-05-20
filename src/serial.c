@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*                Name:           serial.c                                    */
-/*                Version:        1.5.0                                       */
-/*                Date:           19/7/2007                                   */
+/*                Version:        1.5.1                                       */
+/*                Date:           24/9/2010                                   */
 /*                Serial interface for board or emulated board                */
 /*                                                                            */
 /*============================================================================*/
@@ -23,10 +23,6 @@
 
 
 void (*XSV_Cleanup) (void) = NULL;
-
-
-#define IN_POLL_TIMEOUT  1000
-#define OUT_POLL_TIMEOUT  100                         /* 100ms iteration time */
 
 
 //GList *serial_list_2_board = NULL;
@@ -55,6 +51,7 @@ if (SERIAL == interface_type)              /* If connection was set to serial */
   tcsetattr(serial_FD, TCSANOW, &serial_originalportsettings);
   close(serial_FD);                                               /* close it */
   }
+
 exit(1);
 }
 
@@ -99,6 +96,7 @@ XSV_Cleanup = serial_crash;        /* setting up the crash handling function */
 memset((void *) &serialsettings, 0, sizeof(struct termios));
 
 cleanup.sa_handler = (void (*)()) XSV_Cleanup;
+//cleanup.sa_handler = &XSV_Cleanup;
 sigemptyset(&cleanup.sa_mask);
 cleanup.sa_flags = 0;
 
@@ -269,7 +267,7 @@ if ((interface_type == SERIAL)         /* Under all cases - serial connection */
   {
   while (char_number > 0)                       /* while there is more to get */
     {
-    if(!poll (&pollfd, 1, IN_POLL_TIMEOUT))           /* If nothing available */
+    if(!poll (&pollfd, 1, timeout_in))                   /* If nothing available */
       {
       reply_count = 0;                         /* Will force loop termination */
       if (VERBOSE || SERIAL_DEBUG)
@@ -321,7 +319,7 @@ pollfd.fd     = write_pipe;
 pollfd.events = POLLOUT;
 blocked_flag  = FALSE;                                    /* Hasn't timed out */
 
-while (poll(&pollfd, 1, OUT_POLL_TIMEOUT) == 0)     /* See if output possible */
+while (poll(&pollfd, 1, timeout_out) == 0)          /* See if output possible */
   {
   if (!blocked_flag)
     {
