@@ -1,0 +1,937 @@
+; dot komodo file v 0.1.4
+; ARM v4, MIPS R3000 and STUMP (parts of 6809) instruction sets and processor descriptions
+; You can always get the latest version from:
+; http://www.cs.man.ac.uk/teaching/electronics/komodo/.komodo
+; http://www.cs.man.ac.uk/teaching/electronics/komodo/.komodo
+; to learn Chump look at the description of STUMP at the bottom
+
+; This part of the file is for use only with KMD and is ignored by Chump
+; Chump parts starts from about line 100
+
+(
+ (cpu 1 0 0 "ARM"                     ; CPU architecture-number max-verion min-version
+    (memory-ptr-width 4)                ; width of memory pointer (assumes 4)
+    (wordalign 1)                       ; Are words word aligned?
+                                        ; Too painful to explain.
+    (window-list "!~NCurrent.R0.User/System.R1.Supervisor.R2.Abort.R3.Undefined.R4.IRQ.R5.FIQ.R6||NCurrent Flags.F.Saved Flags.S~M~MC")
+    (regbanks 0                         ; regbanks main-regbank
+        (regbank-granularity 4)         ; regbank minimum transfer
+        (regbank "Current" 18 4 0     ; regbank "name"  number-of-registers  size-of-registers  offset
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5"  "R6"  "R7"
+                   "R8" "R9" "R10" "R11" "R12" "R13" "R14" "PC" "CPSR" "SPSR")
+        )
+        (regbank "User/System" 17 4 32
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5"  "R6"  "R7"
+                   "R8" "R9" "R10" "R11" "R12" "R13" "R14" "PC" "CPSR" "SPSR")
+        )
+        (regbank "Supervisor" 18 4 64
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5"  "R6"  "R7"
+                   "R8" "R9" "R10" "R11" "R12" "R13" "R14" "PC" "CPSR" "SPSR")
+        )
+        (regbank "Abort" 18 4 96
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5"  "R6"  "R7"
+                   "R8" "R9" "R10" "R11" "R12" "R13" "R14" "PC" "CPSR" "SPSR")
+        )
+	(regbank "Undefined" 18 4 128
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5"  "R6"  "R7"
+                   "R8" "R9" "R10" "R11" "R12" "R13" "R14" "PC" "CPSR" "SPSR")
+        )
+        (regbank "IRQ" 18 4 160
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5"  "R6"  "R7"
+                   "R8" "R9" "R10" "R11" "R12" "R13" "R14" "PC" "CPSR" "SPSR")
+        )
+        (regbank "FIQ" 18 4 192
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5"  "R6"  "R7"
+                   "R8" "R9" "R10" "R11" "R12" "R13" "R14" "PC" "CPSR" "SPSR")
+        )	
+        (regbank "Current Flags" 4 0 540
+            (names "V" "C" "Z" "N")
+        )
+        (regbank "Saved Flags" 4 0 572
+            (names "V" "C" "Z" "N")
+        )
+        (regbank "Pointers" 16 4 0
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5" "R6" "R7"
+                   "R8" "R9" "R10" "R11" "R12" "SP" "LR" "PC")
+            (pointers)
+            (GREEN 15)	; associated to labels in the source
+            (BLUE 14)
+            (PURPLE 13)
+        )
+    )
+    (isa "ARM32" )                  ;removed MIPS32 STUMP16 later
+ )
+
+ (cpu 2 3000 0 "MIPS"
+    (memory-ptr-width 4)
+    (wordalign 1)
+    (window-list "~M!M|R0,|R1,R2")
+    (regbanks 0
+        (regbank-granularity 4)
+        (regbank "CPU 0-15" 16 4 0
+            (names "R0" "R1" "R2"  "R3"  "R4"  "R5"  "R6"  "R7"
+                   "R8" "R9" "R10" "R11" "R12" "R13" "R14" "R15"
+            (pointers)
+            )
+        )
+        (regbank "CPU 16-31" 16 4 16
+            (names  "R16" "R17" "R18" "R19" "R20" "R21" "R22" "R23"
+                  "R24" "R25" "R26" "R27" "R28" "R29" "R30" "R31"
+                 )
+            (pointers)
+        )
+        (regbank "CP0" 15 4 32
+            (names  "index" "rand"  "E_lo"  "con"
+                    "bvadr" "e_hi"  "sr"    "cause"
+                    "prid"  "HI"    "LO"    "dreg"
+                    "dval" "NEXTPC" "PC" )
+            (pointers)
+            (GREEN 14)
+            (PURPLE 13)
+        )
+    )
+    (isa "MIPS32")
+ )
+
+; Now the Chump descriptions start
+
+; This is basically a list of pairs of elements, defined recursively.
+; The first element (LHS) is as ASCII string; the second element (RHS)
+; is a bitfield description.  The bitfield is defined by letters {O, I,
+; Z, X} which mean {"must be 0", "must be 1" "should be zero", "should
+; be 1"} respectively.  "Should be"s are defaults when assembling but
+; not insisted upon be the disassembler.
+;
+; The translation software assembles by matching a LHS and producing a
+; corresponding RHS, and disassembles with the reverse process.  If
+; there is more than one possible match the first one in the list is
+; used.  Special cases are therefore commonly defined before general
+; cases, so they are trapped out first.
+;
+; Alphabetics are case insensitive.
+;
+; Spaces are `whitespace' in assembler input and single spaces in
+; disassembler output.
+;
+; Tab ('	' takes a parameter which occupies the rest of that string
+; segment.  For example "	f10" means move forwards at least one space
+; to at least column 10.  (CB was unsure -exactly- what this did at time
+; of writing.
+;
+; Futher descriptions are embedded in the code below as they are
+; encountered, marked **
+
+
+ (isa "ARM32"                                      ; ARM 32 instruction set
+  (define   "reg"           (("R0")     (OOOO))    ; Registers
+                            (("R1")     (OOOI))    ; ** String "R1" is always 0001
+                            (("R2")     (OOIO))
+                            (("R3")     (OOII))
+                            (("R4")     (OIOO))
+                            (("R5")     (OIOI))
+                            (("R6")     (OIIO))
+                            (("R7")     (OIII))
+                            (("R8")     (IOOO))
+                            (("R9")     (IOOI))
+                            (("R10")    (IOIO))
+                            (("R11")    (IOII))
+                            (("R12")    (IIOO))
+                            (("R13")    (IIOI))    ; ** 1101 disassembles to R13
+                            (("SP")     (IIOI))    ; **  but SP also assembles to 1101
+                            (("R14")    (IIIO))
+                            (("LR")     (IIIO))
+                            (("PC")     (IIII))    ; R15 aliased with PC
+                            (("R15")    (IIII)))
+
+  (define   "condition"     (("")       (IIIO))    ; Conditions
+                            (("EQ")     (OOOO))
+                            (("NE")     (OOOI))
+                            (("CS")     (OOIO))
+                            (("HS")     (OOIO))
+                            (("CC")     (OOII))
+                            (("LO")     (OOII))
+                            (("MI")     (OIOO))
+                            (("PL")     (OIOI))
+                            (("VS")     (OIIO))
+                            (("VC")     (OIII))
+                            (("HI")     (IOOO))
+                            (("LS")     (IOOI))
+                            (("GE")     (IOIO))
+                            (("LT")     (IOII))
+                            (("GT")     (IIOO))
+                            (("LE")     (IIOI))
+                            (("AL")     (IIIO))    ; AL aliased with ""
+                            (("NV")     (IIII)))
+
+
+  (define   "tests"         (("TST")    (OO))      ; rn rm
+                            (("TEQ")    (OI))      ; rn rm
+                            (("CMP")    (IO))      ; rn rm
+                            (("CMN")    (II)))     ; rn rm
+
+  (define   "dataop"        (("AND")    (OOOO))    ; 3
+                            (("EOR")    (OOOI))    ; 3
+                            (("SUB")    (OOIO))    ; 3
+                            (("RSB")    (OOII))    ; 3
+                            (("ADD")    (OIOO))    ; 3
+                            (("ADC")    (OIOI))    ; 3
+                            (("SBC")    (OIIO))    ; 3
+                            (("RSC")    (OIII))    ; 3
+                            (("ORR")    (IIOO))    ; 3
+                            (("BIC")    (IIIO)))   ; 3
+
+  (define   "moves"         (("MOV")    (IIOI))    ; 2
+                            (("MVN")    (IIII)))   ; 2
+
+
+  (define   "shift"         (("LSL")    (OO))      ; Shift types
+                            (("LSR")    (OI))
+                            (("ASR")    (IO))
+                            (("ROR")    (II)))
+  (define   "set"           (("S")      (I))       ; Set flags bit
+                            (("")       (O)))
+  (define   "sign"          (("U")      (O))       ; Sign for multiplication
+                            (("S")      (I)))
+
+  (define   "rd"    reg)                                          ; **"rd" is substituted by any reg string
+  (define   "rn"    reg)
+  (define   "rm"    reg)
+  (define   "rs"    reg)
+  (define   "hex"   (("&")())  (("0x")())  (()()) )
+
+                                                        ; ARM rotated immediate fields
+  (define   "rotimm"      ((("imm" (uint 8)))        (OOOO imm))  ; **Straight 8-bit integer
+                          ((("imm" (uint 8 @32  2))) (OOOI imm))  ; **8-bit quantity ROR 2 places in 32-bit field
+                          ((("imm" (uint 8 @32  4))) (OOIO imm))
+                          ((("imm" (uint 8 @32  6))) (OOII imm))
+                          ((("imm" (uint 8 @32  8))) (OIOO imm))
+                          ((("imm" (uint 8 @32 10))) (OIOI imm))
+                          ((("imm" (uint 8 @32 12))) (OIIO imm))
+                          ((("imm" (uint 8 @32 14))) (OIII imm))
+                          ((("imm" (uint 8 @32 16))) (IOOO imm))
+                          ((("imm" (uint 8 @32 18))) (IOOI imm))
+                          ((("imm" (uint 8 @32 20))) (IOIO imm))
+                          ((("imm" (uint 8 @32 22))) (IOII imm))
+                          ((("imm" (uint 8 @32 24))) (IIOO imm))
+                          ((("imm" (uint 8 @32 26))) (IIOI imm))
+                          ((("imm" (uint 8 @32 28))) (IIIO imm))
+                          ((("imm" (uint 8 @32 30))) (IIII imm)))
+
+
+
+        (("NOP")    (IIIOOOOI IOIOOOOO OOOOOOOO OOOOOOOO))        ; MOV R0, R0
+        (("NOP")    (OOOOOOOO OOOOOOOO OOOOOOOO OOOOOOOO))
+        (("MRS" condition "	f10" rd ", " ("psr" (("CPSR")(O)) ; e.g. MRS R0, CPSR
+                                             (("SPSR")(I)) ) )
+                (condition OOOI O psr OO XXXX rd ZZZZ ZZZO ZZZZ))
+; ** unused bits {'Z', 'X'} ignored in disassembler but assemble correctly
+
+;  ** In the preceding description the LHS comprises "MRS", a condition
+; string previously defined (including the possibility of "") space
+; which, during disassemble will tab. to column 10, rd - which is a
+; `register', a comma and finally one of the "?PSR" strings - which one
+; is tagged as `psr'.  The RHS is the corresponding `condition' bitfield
+; (RHS), 0001, etc.
+
+        (("MSR" condition "	f10" ("psr" (("CPSR")(O))         ; e.g. MSR SPSR_flags, 90000000
+                                            (("SPSR")(I)) )
+                                  ("mask"(("_f")        (IOOO))
+                                         (("_c")        (OOOI))
+                                         (("_cf")       (IOOI))
+                                         (("_csxf")     (IIII))
+                                         (("_all")      (IIII))
+                                         (("_none?")    (OOOO))
+                                         (("")          (IIII))
+                                         (("_unknown")  (ZZZZ)))
+                                    ", #" hex  rotimm)
+                (condition OOII O psr IO mask ZZZZ rotimm hex))   ; ** "hex" on RHS is null string for `balance'
+
+        (("MSR" condition "	f10" ("psr" (("CPSR")(O))         ; e.g. MSR SPSR_flags, R1
+                                            (("SPSR")(I)) )
+                                  ("mask"(("_f")        (IOOO))
+                                         (("_c")        (OOOI))
+                                         (("_cf")       (IOOI))
+                                         (("_csxf")     (IIII))
+                                         (("_all")      (IIII))
+                                         (("_none?")    (OOOO))
+                                         (("")          (IIII))
+                                         (("_unknown")  (ZZZZ)))
+                                       ", " rm)
+                (condition OOOI O psr IO mask XXXX ZZZZ ZZZO rm))
+
+        (("CLZ" condition "	f10" rd ", " rm)
+               (condition OOOI OIIO  XXXX rd XXXX OOOI rm))
+
+  (define "shiftop" ((rm)              (OOOOO OOO rm) )
+                    ((rm ", RRX")      (OOOOO IIO rm) )           ; replace ROR 0 with RRX
+                    ((rm", " shift " #" hex ("imm" (uint 5)))
+                                        (imm shift O rm hex))
+                    ((rm", " shift " " rs)
+                                        (rs O shift I rm)))
+
+        ((tests  condition  "	f10" rn ", #" hex rotimm)         ; 2 operand no destination ops
+                (condition OOI IO tests I rn ZZZZ rotimm hex))    ; e.g. TST R2, #&12000
+
+        ((tests  condition  "	f10" rn ", " shiftop)             ; e.g. TST R2, R4, LSR #&1F
+                (condition OOO IO tests I rn ZZZZ shiftop))
+
+        ((moves  condition set "	f10"  rd ", #" hex rotimm)
+                (condition OOI moves set ZZZZ rd rotimm hex))     ; e.g. MOV R4, #&1200
+
+        ((moves  condition set "	f10"  rd ", " shiftop)
+                (condition OOO moves set ZZZZ rd shiftop))        ; e.g. MOV R4, R7, ROR #&2
+
+        ((dataop condition set   "	f10" rd                   ; e.g. ADD R4, R5, #&24000
+                                 ", " rn
+                                 ", #" hex rotimm)
+                (condition OOI dataop set rn rd rotimm hex))
+
+        ((dataop condition set   "	f10"  rd                  ; e.g. SUB R4, R5, R4, ROR #&2
+                                 ", " rn
+                                 ", " shiftop )
+                (condition OOO dataop set rn rd shiftop ))
+
+
+        (("MUL" condition set  "	f10"  rn                  ; e.g. MUL R3, R2, R12
+                                 ", " rm
+                                 ", " rs)
+                (condition OOO OOOO set rn ZZZZ rs IOOI rm ))
+
+        (("MLA" condition set  "	f10"  rd                  ; e.g. MLA R3, R2, R12, R2
+                                 ", " rm
+                                 ", " rs
+                                 ", " rn)
+                (condition OOO OOOI set rd rn rs IOOI rm ))
+
+
+        ((sign ("mul" (("MULL")(O)) (("MLAL")(I)))                ; e.g. SMULL R3, R2, R12, R2
+                    condition set    "	f10"  rn
+                                     ", " rd
+                                     ", " rm
+                                     ", " rs)
+                (condition OOOO I sign mul set rd rn rs IOOI rm ))
+
+        (("BX" condition "	f10"rm)
+                (condition OOOI OOIO ZZZZ ZZZZ ZZZZ OOOI rm ))    ; e.g. BXEQ R12
+
+
+  (define  "ldst" (("STR")(O)) (("LDR")(I)))
+  (define  "byte" (("B")  (I)) (("")   (O)))
+  (define  "sub"  (("-")  (O)) (("")   (I)))
+  (define  "wb"   (("!")  (I)) (("")   (O)))
+  (define  "tran" (("T")  (I)) (("")   (O)))
+
+
+        ((ldst condition byte "	f10"                              ; e.g. LDRB R3, &145
+                         rd ", " hex
+                         ("imm" (urelative 12 - 8)) )
+              (condition OIOI I byte O ldst IIII rd imm hex))
+
+        ((ldst condition byte "	f10"                              ; e.g. LDRB R3, &145
+                         rd ", " hex
+                         ("imm" (urelative 12 ~- 8)) )
+              (condition OIOI O byte O ldst IIII rd imm hex))
+
+        ((ldst condition byte "	f10"                              ; e.g. LDRB R3, [R2]
+                         rd ", ["
+                         rn "]")
+              (condition OIOI X byte Z ldst rn rd OOOO OOOO OOOO))
+
+        ((ldst condition byte "	f10"                              ; e.g. LDRB R3, [R2, #&123]!
+                         rd ", ["
+                         rn ", #" sub hex ("imm" (uint 12)) "]"
+                         wb)
+              (condition OIOI sub byte wb ldst rn rd imm hex))
+
+        ((ldst condition tran byte "	f10"                      ; e.g. LDRB R3, [R2], #&123
+                         rd ", ["
+                         rn "], #" sub hex ("imm" (uint 12))    )
+              (condition OIOO sub byte tran ldst rn rd imm hex))
+
+
+        ((ldst condition byte "	f10" rd                          ; e.g. LDRB R3, [R2, -R3]
+                         ", [" rn ", " sub rm "]" wb)
+              (condition OIII sub byte wb ldst rn rd OOOO OOOO rm))
+
+        ((ldst condition tran byte "	f10" rd ", [" rn "], " sub rm )   ;e.g. LDRB R3, [R2], -R3
+              (condition OIIO sub byte tran ldst rn rd OOOO OOOO rm))
+
+
+        ((ldst condition byte "	f10"                              ; e.g. STR R4, [R3, R7, ROR #&2]
+                         rd ", ["
+                         rn ", "
+                         sub rm ", "
+                        shift " #" hex
+                         ("imm" (uint 5 / 2))  "]"
+                         wb)
+              (condition OIII sub byte wb ldst rn rd imm shift O rm hex))
+
+        ((ldst condition tran byte "	f10"                      ; e.g. STR R4, [R3], R7, ROR #&2
+                         rd ", ["
+                         rn "], "
+                         sub rm ", "
+                         shift " #" hex
+                         ("imm" (uint 5 / 2)))
+              (condition OIIO sub byte tran ldst rn rd imm shift O rm hex))
+
+        (("SWP" condition byte "	f10"                      ; e.g. SWP R4, R2, [R4]
+                          rd ", "
+                          rm ", ["
+                          rn "]")
+              (condition OOOI O byte ZZ rn rd ZZZZ IOOI rm))
+
+  (define   "sh"  (("H")  (OI))
+                    (("SH") (II))
+                    (("SB") (XO))    )
+
+        ((ldst condition sh "	f10"                              ; e.g. LDRH      R7, [R8, #&13]
+                         rd ", ["
+                         rn ", #" sub hex
+                         ("immHi" (uint 4))                       ; This is a patch!!
+                         ("immLo" (uint 4)) "]"                   ; FIXME!!! assembly doesn't work
+                         wb)
+            (condition OOOI sub I wb ldst rn rd immHi I sh I immLo hex))
+
+        ((ldst condition sh "	f10"                              ; e.g. LDRH R7, [R8], #&13
+                         rd ", ["
+                         rn "], #" sub hex
+                         ("immHi" (uint 4))                       ; This is a patch!!
+                         ("immLo" (uint 4))    )                  ; FIXME!!! assembly doesn't work
+
+            (condition OOOO sub IO ldst rn rd immHi I sh I immLo hex))
+
+
+        ((ldst condition sh "	f10"                              ; e.g. LDRH R7, [R8, -R4]
+                         rd ", ["
+                         rn ", "
+                         sub
+                         rm "]"
+                         wb)
+            (condition OOOI sub O wb ldst rn rd ZZZZ I sh I rm) )
+
+        ((ldst condition sh "	f10"                              ; e.g. LDRH R7, [R8], -R4
+                         rd ", ["
+                         rn "], "
+                         sub rm)
+            (condition OOOO sub OI ldst rn rd ZZZZ I sh I rm))
+
+  (define   "registerlist15"  ((",PC") (I))                       ; LDM and STM instructions
+                              ((",R15")(I))
+                              ((    )  (O)))
+
+  (define   "registerlists15" (("PC")  (I))
+                              (("R15") (I))
+                              (("R14") (O))  )
+
+  (define   "registerlist14"  ((", R14-PC" )(II))
+                              ((", R14-R15")(II))
+                              ((", R14" ) (OI))
+                              ((registerlist15        )  (registerlist15 O)))
+  (define   "registerlists14"(("R13" registerlist15 )    (registerlist15 O))
+                                   ((registerlists15)    (registerlists15 I))  )
+  (define   "registerlist13" ((", R13-" registerlists15) (registerlists15 II))
+                             ((", R13"  registerlist14 ) (registerlist14 I))
+                             ((registerlist14        )   (registerlist14 O))  )
+  (define   "registerlists13"(("R12" registerlist14 )    (registerlist14 O))
+                             ((registerlists14       )   (registerlists14 I))  )
+  (define   "registerlist12" ((", R12-" registerlists14) (registerlists14 II))
+                             ((", R12"  registerlist13 ) (registerlist13 I))
+                             ((registerlist13        )   (registerlist13 O))  )
+  (define   "registerlists12"(("R11" registerlist13 )    (registerlist13 O))
+                             ((registerlists13       )   (registerlists13 I))  )
+  (define   "registerlist11" ((", R11-" registerlists13) (registerlists13 II))
+                             ((", R11"  registerlist12 ) (registerlist12 I))
+                             ((registerlist12        )   (registerlist12 O))  )
+  (define   "registerlists11"(("R10" registerlist12 )    (registerlist12 O))
+                             ((registerlists12       )   (registerlists12 I))  )
+  (define   "registerlist10" ((", R10-" registerlists12) (registerlists12 II))
+                             ((", R10"  registerlist11 ) (registerlist11 I))
+                             ((registerlist11        )   (registerlist11 O))  )
+  (define   "registerlists10"(("R9" registerlist11 )     (registerlist11 O))
+                             ((registerlists11       )   (registerlists11 I))  )
+  (define   "registerlist9"  ((", R9-"  registerlists11) (registerlists11 II))
+                             ((", R9" registerlist10 )   (registerlist10 I))
+                             ((registerlist10        )   (registerlist10 O))  )
+  (define   "registerlists9" (("R8" registerlist10 )     (registerlist10 O))
+                             ((registerlists10       )   (registerlists10 I))  )
+  (define   "registerlist8"  ((", R8-"  registerlists10) (registerlists10 II))
+                             ((", R8" registerlist9 )    (registerlist9 I))
+                             ((registerlist9        )    (registerlist9 O))  )
+  (define   "registerlists8" (("R7" registerlist9 )      (registerlist9 O))
+                             ((registerlists9       )    (registerlists9 I))  )
+  (define   "registerlist7"  ((", R7-" registerlists9  ) (registerlists9 II))
+                             ((", R7"registerlist8  )    (registerlist8 I))
+                             ((registerlist8        )    (registerlist8 O))  )
+  (define   "registerlists7" (("R6"registerlist8  )      (registerlist8 O))
+                             ((registerlists8        )   (registerlists8 I))  )
+  (define   "registerlist6"  ((", R6-"  registerlists8 ) (registerlists8 II))
+                             ((", R6"registerlist7  )    (registerlist7 I))
+                             ((registerlist7        )    (registerlist7 O))  )
+  (define   "registerlists6" (("R5"registerlist7  )      (registerlist7 O))
+                             ((registerlists7       )    (registerlists7 I))  )
+  (define   "registerlist5"  ((", R5-"  registerlists7 ) (registerlists7 II))
+                             ((", R5" registerlist6  )   (registerlist6 I))
+                             ((registerlist6        )    (registerlist6 O))  )
+  (define   "registerlists5" (("R4" registerlist6  )     (registerlist6 O))
+                             ((registerlists6       )    (registerlists6 I))  )
+  (define   "registerlist4"  ((", R4-"  registerlists6 ) (registerlists6 II))
+                             ((", R4" registerlist5  )   (registerlist5 I))
+                             ((registerlist5        )    (registerlist5 O))  )
+  (define   "registerlists4" (("R3" registerlist5  )     (registerlist5 O))
+                             ((registerlists5       )    (registerlists5 I))  )
+  (define   "registerlist3"  ((", R3-"   registerlists5) (registerlists5 II))
+                             ((", R3" registerlist4  )   (registerlist4 I))
+                             ((registerlist4        )    (registerlist4 O))  )
+  (define   "registerlists3" (("R2" registerlist4 )      (registerlist4 O))
+                             ((registerlists4       )    (registerlists4 I))  )
+  (define   "registerlist2"  ((", R2-" registerlists4  ) (registerlists4 II))
+                             ((", R2" registerlist3 )    (registerlist3 I))
+                             ((registerlist3        )    (registerlist3 O))  )
+  (define   "registerlists2" (("R1" registerlist3  )     (registerlist3 O))
+                             ((registerlists3        )   (registerlists3 I))  )
+  (define   "registerlist1"  ((", R1-"  registerlists3)  (registerlists3 II))
+                             ((", R1" registerlist2 )    (registerlist2 I))
+                             ((registerlist2        )    (registerlist2 O))  )
+  (define   "registerlist"  (("R0-" registerlists2   )   (registerlists2                   II))
+                             (("R1-" registerlists3   )  (registerlists3                  IIO))
+                             (("R2-" registerlists4   )  (registerlists4                 IIOO))
+                             (("R3-" registerlists5   )  (registerlists5               I IOOO))
+                             (("R4-" registerlists6   )  (registerlists6              II OOOO))
+                             (("R5-" registerlists7   )  (registerlists7             IIO OOOO))
+                             (("R6-" registerlists8   )  (registerlists8            IIOO OOOO))
+                             (("R7-" registerlists9   )  (registerlists9          I IOOO OOOO))
+                             (("R8-" registerlists10  )  (registerlists10        II OOOO OOOO))
+                             (("R9-" registerlists11  )  (registerlists11       IIO OOOO OOOO))
+                             (("R10-" registerlists12 )  (registerlists12      IIOO OOOO OOOO))
+                             (("R11-" registerlists13 )  (registerlists13    I IOOO OOOO OOOO))
+                             (("R12-" registerlists14 )  (registerlists14   II OOOO OOOO OOOO))
+                             (("R13-" registerlists15 )  (registerlists15  IIO OOOO OOOO OOOO))
+                             (("R14-PC")                 (                IIOO OOOO OOOO OOOO))
+                             (("R14-R15")                (                IIOO OOOO OOOO OOOO))
+
+                             (("R0" registerlist1   )    (registerlist1                   I))
+                             (("R1" registerlist2   )    (registerlist2                  IO))
+                             (("R2" registerlist3   )    (registerlist3                 IOO))
+                             (("R3" registerlist4   )    (registerlist4                IOOO))
+                             (("R4" registerlist5   )    (registerlist5              I OOOO))
+                             (("R5" registerlist6   )    (registerlist6             IO OOOO))
+                             (("R6" registerlist7   )    (registerlist7            IOO OOOO))
+                             (("R7" registerlist8   )    (registerlist8           IOOO OOOO))
+                             (("R8" registerlist9   )    (registerlist9         I OOOO OOOO))
+                             (("R9" registerlist10  )    (registerlist10       IO OOOO OOOO))
+                             (("R10" registerlist11 )    (registerlist11      IOO OOOO OOOO))
+                             (("R11" registerlist12 )    (registerlist12     IOOO OOOO OOOO))
+                             (("R12" registerlist13 )    (registerlist13   I OOOO OOOO OOOO))
+                             (("R13" registerlist14 )    (registerlist14  IO OOOO OOOO OOOO))
+                             (("LR"  registerlist15 )    (registerlist15 IOO OOOO OOOO OOOO))
+                             (("R14" registerlist15 )    (registerlist15 IOO OOOO OOOO OOOO))
+                             (("PC")                     (              IOOO OOOO OOOO OOOO))
+                             (("R15")                    (              IOOO OOOO OOOO OOOO))
+                             (("none?")                  (              OOOO OOOO OOOO OOOO))
+                             (("")                       (              OOOO OOOO OOOO OOOO)))
+
+
+  (define   "ldst"   (("STM")(O)) (("LDM")(I)))
+
+        ((ldst condition ("u" (("D")(O))                          ; e.g. LDMDA     R3, {R2-R3, R5-R7, R10}
+                              (("I")(I)) )
+                         ("p" (("A")(O))
+                              (("B")(I)) ) "	f10"
+                             rn  wb
+                             ", {"registerlist"}"
+                                 ("s" ((   )(O))
+                                      (("^")(I)) )  )
+            (condition IOO p u s wb ldst rn registerlist))
+
+  (define   "ldstc" (("STC")(O)) (("LDC")(I)))
+  (define   "cocond"    (("2")(IIII))
+                        condition       )
+  (define   "clong" (("L")  (I))
+                    (()     (O))    )
+  (define   "cop"   (("P1" ("no" (uint 4 + 10)))    (no))
+                    (("P"  ("no" (uint 4)))         (no))    )
+
+        ((ldstc cocond clong "	f10"                              ; e.g. STC P1, R3, [R3]
+                         cop ", "
+                         rd ", ["
+                         rn "]")
+            (cocond IIOZ Z clong Z ldstc rn rd cop OOOO OOOO))
+
+        ((ldstc cocond clong "	f10"                              ; e.g. STC P1, R3, [R3, #&10]
+                         cop ", "
+                         rd ", ["
+                         rn ", #" sub hex ("imm" (uint 8 / 4)) "]"
+                         wb)
+            (cocond IIOI sub clong wb ldstc rn rd cop imm hex))
+
+        ((ldstc cocond clong "	f10"                              ; e.g. STC P1, R3, [R3], #&-10
+                         cop ", "
+                         rd ", ["
+                         rn "], #" sub hex ("imm" (uint 8 / 4)))
+            (cocond IIOO sub clong I ldstc rn rd cop imm hex))
+
+  (define   "mrccr" (("MCR")(O))
+                    (("MRC")(I))    )
+
+        ((mrccr cocond  "	f10"                                   ; e.g. MCR P1, R3, R10, R12
+                        cop ", "
+                        rd ", "
+                        rn ", "
+                        rm)
+            (cocond IIIO ZZZ mrccr  rn rd cop ZZZ I rm))
+
+        (("B" ("link"   (("L" )(I))                               ; e.g. B   &1232C0
+                        (("")(O)) )
+                         condition "	f10" hex
+                            ("offset" (relative 24 - 8 / 4))    )
+            (condition IOI link offset hex))
+
+        (("SWI" condition "	f10" ("number" (uint 24)))        ; e.g. SWI 1232C0
+            (condition IIII number))
+ )
+
+
+ (isa "MIPS32"
+  (define    "regnum"
+                     (("0")         (OOOOO))         (("1")         (OOOOI))
+                     (("2")         (OOOIO))         (("3")         (OOOII))
+                     (("4")         (OOIOO))         (("5")         (OOIOI))
+                     (("6")         (OOIIO))         (("7")         (OOIII))
+                     (("8")         (OIOOO))         (("9")         (OIOOI))
+                     (("10")        (OIOIO))         (("11")        (OIOII))
+                     (("12")        (OIIOO))         (("13")        (OIIOI))
+                     (("14")        (OIIIO))         (("15")        (OIIII))
+                     (("16")        (IOOOO))         (("17")        (IOOOI))
+                     (("18")        (IOOIO))         (("19")        (IOOII))
+                     (("20")        (IOIOO))         (("21")        (IOIOI))
+                     (("22")        (IOIIO))         (("23")        (IOIII))
+                     (("24")        (IIOOO))         (("25")        (IIOOI))
+                     (("26")        (IIOIO))         (("27")        (IIOII))
+                     (("28")        (IIIOO))         (("29")        (IIIOI))
+                     (("3O")        (IIIIO))         (("31")        (IIIII)))
+
+  (define    "reg" (("$" regnum)(regnum))                         ; Annoyingly there are more register naming convensions
+                     (("R" regnum)(regnum))
+                     (("RA"      )(IIIII )))
+
+  (define "and-link"
+                (("AL") (I))
+                (("")   (O)) )
+
+  (define "unsigned"
+                 (("U")   (I))
+                 (("")    (O)) )
+
+  (define "special"
+                 (("MOVE" "	f10" ("rd" reg) ", " ("rs" reg))           ;e.g. MOVE $4, $3
+                                             (rs OOOOO rd ZZZZZ IOOOO X))
+                (("NOP")            (ZZZZZ ZZZZZ OOOOO ZZZZZ ZOOZZZ))   ;e.g. NOP
+                 ((( "op"                                         ; e.g. SLL  $4, $3, 11
+                    (("SLL ")    (OO))
+                    (("SRL ")    (IO))
+                    (("SRA ")    (II)) ) "	f10"
+                        ("rd" reg) ", " ("rt" reg) ", " ("sa" (uint 5)))
+                                            ( ZZZZZ rt rd sa OOOO op ) )
+                ((( "op"                                          ; e.g. SLLV $4, $3, $5
+                    (("SLLV ")    (OO))
+                    (("SRLV ")    (IO))
+                    (("SRAV ")    (II)) ) "	f10"
+                        ("rd" reg) ", " ("rt" reg) ", " ("rs" reg))
+                                            ( rs rt rd ZZZZZ OOOI op ) )
+
+                ((( "op"                                          ; e.g. ADD $4, $3, $5
+                    (("ADD" unsigned " ")    (OOO unsigned))
+                    (("SUB" unsigned " ")    (OOI unsigned))
+                    (("AND ")                (OIOO))
+                    (("OR ")                 (OIOI))
+                    (("XOR ")                (OIIO))
+                    (("NOR ")                (OIII))
+                    (("SLT" unsigned " ")    (IOI unsigned))) "	f10"
+                        ("rd" reg) ", " ("rs" reg) ", " ("rt" reg))
+                                            ( rs rt rd ZZZZZ IO op ) )
+
+                 (("JR " "	f10" reg )    (reg ZZZZZ ZZZZZ ZZZZZ OOIOOO) ) ;e.g. JR        $31
+                 (("JALR " "	f10" ("rs" reg) ", " ("rd" reg))       ;e.g. JALR      $23, $31
+                                                 ( rs ZZZZZ  rd   ZZZZZ OOIOOI) )
+
+                 ((( "op"                                         ; e.g. MUL $3, $2
+                    (("MUL")    (O))
+                    (("DIV")    (I))) unsigned "	f10"
+                        ("rs" reg) ", " ("rt" reg))
+                                        ( rs rt ZZZZZ ZZZZZ OIIO op unsigned))
+
+                 (("MF"                                           ; e.g. MFHI  $3
+                    ( "mul-reg"
+                    (("HI ")    (O))
+                    (("LO ")    (I))) "	f10"
+                            reg )        ( ZZZZZ ZZZZZ reg ZZZZZ OIOO mul-reg O))
+
+                 (("MT"                                           ; e.g. MTLO  $3
+                    ( "mul-reg"
+                    (("HI ")     (O))
+                    (("LO ")    (I))) "	f10"
+                                reg)    ( reg ZZZZZ ZZZZZ ZZZZZ OIOO mul-reg I))
+
+                 (("SYSCALL")    (ZZZZZ ZZZZZ ZZZZZ ZZZZZ OOIIOO))      ;e.g. SYSCALL
+                 (("BREAK")      (ZZZZZ ZZZZZ ZZZZZ ZZZZZ OOIIOI)))     ;e.g. BREAK
+
+  (define "itype" (("LI   " reg ", "("imm" (int 16))) (OOI OOOOO reg imm) ) ;e.g. LI   $4, 123
+                   ((( "op"                                                 ;e.g. ORI       $4, $2, 123
+                    (("ADDI" unsigned " ")    (OO unsigned))
+                    (("SLTI" unsigned " ")    (OI unsigned))
+                    (("ANDI ")                (IOO))
+                    (("ORI ")                 (IOI))
+                    (("XORI ")                (IIO))
+                    (("LUI ")                 (III)))"	f10"
+                        ("rt" reg) ", " ("rs" reg) ", " ("imm" (int 16)))
+                                            ( op rs rt imm) )    )
+
+  (define "ldst"    ((  ("dir"                                        ;e.g. LWC1      $4, 123($3)
+                            (("L")    (O))
+                            (("S")    (I)))
+                        "WC" ("number" (uint 2)) "	f10" ("rt" reg) ", "
+                    ("offset" (int 16)) "(" ("base" reg) ")")
+                                        (I dir O number base rt offset))
+                ((      ("dir"
+                            (("L")    (O))
+                            (("S")    (I)))
+                    ( "size"                                                ;e.g. LWL       $4, 123($3)
+                         (("B" unsigned " ") (unsigned OO))
+                         (("H" unsigned " ") (unsigned OI))
+                         (("W ")              (OII))
+                         (("WL ")             (OIO))
+                         (("WR ")             (IIO))    )"	f10"
+                            ("rt" reg)", " ("offset" (int 16))
+                                                    "(" ("base" reg) ")")
+                                            (O dir size base rt offset))    )
+
+  (define "coprocessor" ((( "move"                                          ;e.g. MFC0      $4, $2
+                            (("M")    (O))
+                            (("C")    (I)))
+                            ( "dir"
+                                (("F")    (O))
+                                (("T")    (I)))
+                                  "C" ("number" (uint 2))  "	f10"
+                                 ("rt" reg) ", " ("rd" reg))
+                                     (OO number OO dir move O rt rd OOOOOOOOOOO))
+                         (("TLBR")     (OOOOIOOOOOOOOOOOOOOOOOOOOOOOOI))
+                         (("TLBWI")    (OOOOIOOOOOOOOOOOOOOOOOOOOOOOIO))
+                         (("TLBWR")    (OOOOIOOOOOOOOOOOOOOOOOOOOOOIIO))
+                         (("TLBP")     (OOOOIOOOOOOOOOOOOOOOOOOOOOIOOO))
+                         (("RFE")      (OOOOIOOOOOOOOOOOOOOOOOOOOIOOOO))
+                         (("COP" ("number" (uint 2)) "	f10"                ;e.g. COP1      123
+                                             ("code" (int 25)))
+                                                    (OO number I code))
+                         (("BC"  ("number" (uint 2))                        ;e.g. BC1T 1000
+                                     ( "bool"   (("F ") (O))
+                                                (("T ") (I))) "	f10"
+                                                ("offset" (relative 16 / 4 + 4)))
+                                        (OO number OIOOO OOOO bool offset)) )
+
+  (define "brtype"        (define "offset" (relative 16 / 4 + 4 ))
+                        (("B" and-link "	f10" offset)                      ;e.g. B         30
+                                    (OOIOOOOO and-link ZZZI offset))
+                        (("B" ( "cond"                                      ;e.g. BLEZ      $3, 20
+                                (("LTZ")    (O))
+                                (("GEZ")    (I)))
+                                    and-link "	f10" reg ", "offset)
+                                    (OOI reg and-link ZZZ cond offset))
+                        (("B" ( "cond"                                      ;e.g. BEQ       $3, $5, 20
+                                (("EQ ")  (O))
+                                (("NE ")  (I))) "	f10"
+                                    ("rs" reg) ", " ("rt" reg) ", " offset)
+                                    (IO cond rs rt offset))
+                        (("B" ( "cond"                                      ;e.g. BLEZ      $5, 20
+                                (("LEZ ") (O))
+                                (("GTZ ") (I))) "	f10" reg ", " offset )
+                                    (II cond reg OOOOO  offset))    )
+
+
+
+        ((special)                          (OOOOOO     special     ))
+        (("J" and-link "	f10" ("ptr" (int 26 / 4)))
+                                            (OOOOI      and-link ptr))
+        ((brtype)                           (OOO        brtype      ))
+        ((itype)                            (OOI        itype       ))
+        ((coprocessor)                      (OI         coprocessor ))
+        ((ldst)                             (I          ldst        ))
+ )
+ (isa "STUMP16"  ; STUMP is a simple 16-bit processor (C) Andrew Bardsley
+                 ; Use this description to learn chump
+                 ; This is not a good tutorial but you can get the basics
+                 ; Firstly the basics:
+                 ; The following is the correct syntax to describe a translation
+                 ; (("Disassembled descrption")(Assembled description))
+                 ; disassembled description is simply a string or set of strings
+                 ; Assembled description is a set of bits I (always on),O (always off),
+                 ;      X (don't care but set as on), Z (don't care but set as off)
+                 ; Be careful, I and O are LETTERS. The parser will complain if it doesn't understand.
+                 ; e.g. 1 :   (("R3")(OII)) - matches 011 to "R3"
+                 ;                              and "R3" to 011
+                 ; e.g. 2 :   (("BR")(OZX)) - matches 000, 001, 010 or 011 to "BR"
+                 ;                              and "BR" to 001
+                 ; e.g. 3 :   (("PC")(III))
+                 ;            (("R7")(III))   - matches 111, to "PC" as it's first in the list
+                 ;                              and "PC" or "R7" to 111
+                 ; e.g. 4 :   (define "set" (("S")(I))      defines a rule called "set"
+                 ;                          (("") (O)) )    this rule can now be used in all rules below
+                 ;               (("ADD" set) (OI set))     we can now use the predefined rule in another rule
+                 ;                                          remember to place the rule in both the binary and ASCII sections
+                 ; e.g. 5 :   (define "imm" (int 4 + 4))    "imm" is defined to be a 4bit hex number. When DISASSEMBLING 4 is added
+                 ; e.g. 6 :   (define "imm" (relative 4))   "imm" is defined to be a 4bit relative number offset from the current position
+                 ; e.g. 7 :   (("#" ("imm" (int 4))) (imm)) the imm rule is defined in the rule. It's only valid in this rule
+                 ;                                          and previous definition is ignored in this rule
+                 ; Take a look at the STUMP instruction set
+                 ;          Instruction types
+                 ;          1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
+                 ;          5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+                 ;          --------------------------------
+                 ; Type 1     OP |0|S| DST |SRCA |SRCB |SHIFT
+                 ; Type 2     OP |1|S| DST |SRCA | IMMEDIATE
+                 ; Cond Br  1|1|1|1| COND  |    OFFSET
+
+
+
+    (define     "reg"           (("R0")(OOO))   (("R1")(OOI))       ; Firstly we 'define' a description of all the registers
+                                (("R2")(OIO))   (("R3")(OII))       ; R0 - 000, R1 - 001 ... PC - 111, R7 - 111
+                                (("R4")(IOO))   (("R5")(IOI))       ; 111 is overloaded, When disassembling it will choose the first
+                                (("R6")(IIO))   (("PC")(III))       ; one ("PC") but when assembling either is acceptable
+                                                (("R7")(III)))
+    (define "dst" reg)                                              ; DST is a register
+    (define "srca" reg)                                             ; so are SrcA and SrcB
+    (define "srcb" reg)
+    (define "op"                (("ADD")(OOO))  (("ADC")(OOI))      ; These are the 6 OP codes
+                                (("SUB")(OIO))  (("SBC")(OII))
+                                (("AND")(IOO))  (("OR") (IOI)))
+    (define "set"   (("S")(I))                                      ; If set bit is set then add an S onto the opcode
+                    (("") (O)))                                     ; e.g. ADD -> ADDS
+
+    (define "shift" (("")      (OO))                                ; Shift types
+                    ((", ASR") (OI))
+                    ((", ROR") (IO))
+                    ((", RRC") (II)))
+
+    (define "cond"  (("")   (OOOO))                                 ; Branch conditions
+                    (("AL") (OOOO))
+                    (("NV") (OOOI))
+                    (("HI") (OOIO))
+                    (("LS") (OOII))
+                    (("CC") (OIOO))
+                    (("CS") (OIOI))
+                    (("NE") (OIIO))
+                    (("EQ") (OIII))
+                    (("VC") (IOOO))
+                    (("VS") (IOOI))
+                    (("PL") (IOIO))
+                    (("MI") (IOII))
+                    (("GE") (IIOO))
+                    (("LT") (IIOI))
+                    (("GT") (IIIO))
+                    (("LE") (IIII)))
+
+    (define "dir"   (("LD")(O))                                     ; The difference between an ST and an LD is in the S bit
+                    (("ST")(I)))
+
+
+    (("NOP") (OZZ Z O OOO ZZZ ZZZ ZZ))                               ; These are the descriptions of the instructions
+    (("NOP") (IOZ Z O OOO ZZZ ZZZ ZZ))                               ; These two NOP descriptions overlap other instructions
+
+    (("CMP" "	f10" srca ", " srcb  shift )                         ; e.g. CMP  R3, R6, ASR
+            (OIO O I OOO srca srcb shift))
+
+    (("CMP" "	f10" srca ", " ("imm" (int 5)) )                     ; e.g. CMP  R4, 12
+            (OIO I I OOO srca imm))                                 ; notice the inline definition if "imm"
+
+    (("MOV" set "	f10" dst ", " ("imm" (int 5)))                   ; e.g. MOVS     R3, 12
+            (OOOO set dst OOO imm))
+
+    (("MOV" set "	f10" dst ", " ( "src" ((reg)(OOO reg))           ; e.g. MOV      R3, R5
+                                         ((reg)(reg OOO))) shift)   ; note inline definition can also be translations
+            (OOOO set dst src shift))
+
+
+    ((op set "	f10" dst ", " srca ", " srcb shift)                 ; e.g. ADD      R4, R7, R2
+     (op O set dst srca srcb shift))
+
+    ((op set "	f10" dst ", " srca ", " ("imm" (int 5)) )           ; e.g. SUBS     R6, R2, C
+     (op I set dst srca imm))
+
+    (("B" cond "	f10" ("offset" (relative 8 )))                    ; e.g. BNE      100
+     (IIII cond offset))
+
+    ((dir "	f10" dst ", [" srca ", " srcb shift "]")               ; e.g. LD       r4, [r3,r0]
+     (IIO O dir dst srca srcb shift))
+
+    ((dir "	f10" dst ", [" srca ", " ("imm" (int 5)) "]")          ; e.g. LD       r4, [r3,12]
+     (IIO I dir dst srca imm))
+ )
+
+ (isa "MC6809"                              ; This is just a little tester to see if chump copes with CISC ISAs
+    (define  "aorb" (("A")(O))
+                    (("B")(I)))
+
+    (define "abopps"
+                        (("SUB")    (OOOO))
+                        (("CMP")    (OOOI))
+                        (("SBC")    (OOIO))
+                        (("AND")    (OIOO))
+                        (("BIT")    (OIOI))
+                        (("LD")     (OIIO))
+                        (("EOR")    (IOOO))
+                        (("ADC")    (IOOI))
+                        (("OR")     (IOIO))
+                        (("ADD")    (IOII)))
+
+    (
+     (("inherent"
+                    (("ASR")(OIII))
+                    (("ASL")(IOOO))
+                    (("CLR")(IIII))
+                    (("COM")(OOII))
+                    (("DEC")(IOIO))
+                    (("INC")(IIOO))
+                    (("LSL")(IOOO))
+                    (("LSR")(OIOO))
+                    (("NEG")(OOOO))
+                    (("ROL")(IOOI))
+                    (("ROR")(OIIO))
+                    (("TST")(IIOI)))
+                                 aorb) (OIO aorb inherent))
+    (("RTI") (OOIIIOII))
+    (("RTS") (OOIIIOOI))
+    (("SEX") (OOOIIIOI))
+    (("SWI") (OOIIIIII))
+    (("SWI2")(OOIIIIII OOOIOOOO ))
+    (("SWI3")(OOIIIIII OOOIOOOO ))
+
+    ((abopps aorb "	f10" "#" ("imm" (uint 8)))  (imm I aorb OO abopps))
+    ((abopps aorb "	f10" "<" ("imm" (uint 16))) (imm I aorb II abopps))
+
+
+ )
+
+
+ (feature 0x11 0x0a01 "xilinx-fpga"
+     (name "Spartan XCS10XL")
+      (XFPGA-filestring "s10xlvq100")
+ )
+
+ (feature 0x12 0x1E02 "xilinx-fpga"
+      (name "Virtex XCV300")
+      (XFPGA-filestring "v300pq240")
+ )
+
+ (feature 0x13 0x1E02 "xilinx-fpga"
+      (name "Virtex XCV300E")
+      (XFPGA-filestring "v300epq240")
+ )
+
+ (feature 0x04 0x0005 "added for redundancy"
+      (name "ignore this feature, it does not exist")
+ )
+
+ (feature 0x00 0xFFFF  "terminal" 		; FFFF meaning all.
+      (name "Terminal")
+ )
+
+)

@@ -1,0 +1,22 @@
+This is KMD 0.1.03
+This is a very small readme until the calling mechanism is decided.
+
+To install read the INSTALL file
+
+There are several programs:
+
+FLASH is the flash rom programmer.
+After running type ? to get help
+
+KMD is the main graphical debugger.
+kmd -c will create a default .komodo file in your home drectory
+kmd -e will run with an emulation backend.  You must have JIMULATOR in your path
+kmd will run a standard version of komodo talking to
+    the board over the serial port
+
+JIMULATOR is the ARM emulation backend for komodo (alpha)
+
+KOMODO_EMULMIPS is the pre alpha mips emulation backend (alpha)
+
+ASM is the assembler and disassembler tester. (test only)
+

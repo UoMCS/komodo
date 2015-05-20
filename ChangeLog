@@ -1,0 +1,70 @@
+2001-09-17  0.1.1 Charlie Brej
++ new project 'jimulator' loaded with -e option (ARM emulator)
++ new project 'komodo-emulmips' loaded with -e option (MIPS emulator)
++ option '-e' to use software emulator
+# error when no .komodo file
++ option -c to create .komodo file
++ automatic insertion of new .komodo file into source
++ loading of straight binary files
++ file load error window when unable to load file
+2001-09-03  0.1.2 Charlie Brej
+# Fixed all memory exceptions in assembler/diassembler code
+# ARM ldm instructions not list registers incrementaly
+2001-12-16  0.1.3 Charlie Brej
+# Project officialy changes name to KMD new binarys are called 'kmd'
+# Fixed random bugs in ARM disassembly
+# Flash now needs to exchange magic numbers with board
+# Tries to exit properly when main windows is closed
+2002-01-22 0.9.0 Charlie Brej
++ Added refresh button to manualy control refreshing
+2002-02-14 0.9.1 Charlie Brej
+# Fixed Loading crash
+# Assembler disassembler has been renamed 'chump'
+- flashserial.c deleted
+# flash.c now uses standard serial.c
+- Fake host code removed from serial.c as sucseeded by emulator
++ flash now accepts the the port speed and settings from configure
+2002-02-20 0.9.2 Charlie Brej
++ Incooperated propper commandline options into kmd and flash
++ Serial port and emulator can be set up on command line
+2002-03-05 0.9.3 Charlie Brej
+# Fixed register moving in memory window around when linking to it using a
+    dinamic link (e.g. #pc)
++ A little tutorial to learn chump in the .komodo file
++ Added special registers that have pixmaps and colour the line in the memory window
+2002-03-08 0.9.4 Charlie Brej
++ Loading of the symbol table from the binary
++ Global symbols will appear in the memory window.
++ Any symbols can be used when typing in the address or data (but not assembly)
+2002-03-11 0.9.5 Charlie Brej
++ Added --enable-gtk2 to compile linking against GTK+ 2.0
+# Cahnged some view.c functions to allow compiling with GTK+ 2.0
++ Added --enable-static to link staticly. This will allow an executable to run
+    without dinamic librarys. Now available for distribution.
+2002-03-19 0.9.6 Charlie Brej
+# Fixed bug loading all ELF sections including the debugging ones.
++ New board feature: "Console".
++ Two new commands in protocol: Feature Write data - 0 0 0 1 0 0 1 0 
+                                Feature Read data  - 0 0 0 1 0 0 1 1
++ Added a memory mapped console in jimulator.
+! Warning these changes in the protocol have not been approved
++ Different serial wait times for KMD and Flash
+2002-04-2 0.9.7 Charlie Brej
++ Binary files can be loaded at any memory address
++ Constant update of the address loaded to field as user types
++ sample.komodo is a sammple .komodo file that can be altered before compilation.
++ new command line option -t to specify a GTK+ theme
+2002-05-29 0.9.8 Charlie Brej
++ New command line option -k to specify any .komodo file at execution time
++ New command line option -i to select the program to use the file compiled into it.
++ Can now be compiled to by default use internal .komodo
++ New command line option -v for verbose. Overrides compile time choice.
++ New command line option -q for quiet. Overrides compile time choice.
++ Compile time option -enable-wall to compile pedanticly.
+# Removed all -Wall warnings including some real bugs. (163 in total)
++ Started describing 6809 in chump.
++ Chump is now available on its own from and allows a line assembler/disassembler.
+  available from http://www.cs.man.ac.uk/~brejc8/chump.html
+2002-06-03 0.9.8.bugfix Charlie Brej
+# Fixed symbols being loaded without offset of the section held in.
+# Fixed not loading of local symbols.
