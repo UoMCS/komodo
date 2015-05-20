@@ -1,0 +1,139 @@
+BUGS
+
+//Running of SWIs/BLs as monotonic in emulator
+//	(Single step doesn't call BLs (etc.) as required)
+	Probably okay now.  Needs testing.  Needs "OS" SWI trapping strategy.
+
+timeout(?) can cause emulator setup to barf at start up.
+
+// callback_mode_selection BUGS   (okay now ?)
+
+//Memory display doesn't work at "32 bytes" wide ... not enough columns defined
+	Okay now except 32 bytes + ASCII + DISS appears to lose last column
+	Not investigated yet.
+
+Half word load/stores et al. in assembler
+
+// Another bug that I discovered with the simulator was, the switch into 
+// System mode of operation. It causes all the registers values change
+// and it is not possible to leave it. It just goes to invalid mode.
+
+// Chump asr/lsr #32 broken (comes out as #0).
+Chump asr/lsr/ror #0 still accepted for assembly.
+
+Imbalance in .komodo for Chump (e.g. missing "hex" on RHS) causes
+seg. fault.
+
+Watchpoint window buttons not properly initialised; looks as if
+watchpoint not getting an initial `breakpoint_select'.
+
+Emulator gets at memory directly - can see things it shouldn't (-ve
+offset?).
+
+Can't quit unless board switched on.
+
+Instruction count doesn't update following "continue" (et al. ?)
+
+Walk-Stop-Continue crashes into "Run" mode (in emulator, at least)
+
+Can't type into source window Tab box
+	   Somewhere around: callback_memwindow_tabsize (view/callbacks)
+
+File loader has problems if (e.g. no read permission).  Been observed
+to hang.
+
+Some fixed, but some naughty integer<->pointer aliasing left.  Warns
+on 64-bit compilation.  Most (all?) in:
+chump.c: In function `asm_disassemble'  & chump.c: In function `asm_assemble'
+numbers limited with "temp_data"
+Understanding code is scary enough!
+
+
+MESSINESS
+
+Check operating mode when global break/watchpoint button changed; if
+running (etc.) stop, update and continue.
+
+.komodo and dotkomodo.string duplicate data
+
+//Get "compile" file name into .komodo file (rather than hard coded as ./kmd_compile).
+Separate assembler specifiers from .komodo
+
+Sorting out header files and scope.
+
+Breakpoint colouring hits whole line of memory (ONLY if address matches)
+Ditto for "special_register" colouring
+
+"board_enq" does too much in one call
+
+Flag (SPSR) linkage to displayed SPSR
+     Fixed (?) but not wholly tested. [ More "fixed" 12/1/04 ]
+     Redundant label following menu; also internally v. messy!
+//     MORE flags (F, I, T, ...) I & F done; "i" is a bit thin :-/
+T button done but enable bodged.
+Maybe check flag (all) changes with back end then set button ??
+
+Single bit "registers" display broken.
+
+code "ldmFD" etc. modes for disassembler (tedious!)
+
+Disassembler thinks STRSB exists
+
+Evaluator relies on "view_updateregwindow" having updated the cached
+register values recently.  Now bodged so `current' registers updated,
+but not satisfactory if (e.g.) no register window instantiated.
+Needs thinking through strategy on value cacheing.
+
+//Suppressing updates to undisplayed memory window(s)  ("viewfuncs.c")
+// Kind-of done; all windows are `displayed' (at one level)
+
+Trap for memory map as sent by back end.
+(Needs back end map enhancement/completion first.)
+
+"Visual Class" should be read by ????  (JSP)
+
+Label types not considered from (new) ELF loader.
+
+
+ENHANCEMENT
+
+Sorting in symbol table display window (sort by definition, value,
+label); flush, define.
+
+Add "symbols" column (to left) on memory windows instead of
+overwriting address.
+
+A `memory reference' column in source window (optional).
+(Possibly two: address and memory contents at address)
+Requires considerable knowledge of instruction operation.
+
+Binary display instead/additional to hex. (?)
+
+Tooltip brighter background? (PJJ)
+
+
+JNZ imports pending:
+
+Makefile, config.h, configure:
+    Renamed the version string from 1.4.0 to 1.4.0-UNSW.  This should
+    be integrated into Makefile.am et cetera; I have been too lazy to
+    do so (and I don't have all of the files needed in any case!)
+
+src/Makefile:
+    Renamed the version string.  Made the library libbfd statically
+    included, as per Debian GNU/Linux's standards.  This library
+    should never be dynamically linked, since the interface seems to
+    change all the time, with every upgrade to the binutils package.
+
+src/view.c:
+    Fairly extensive reorganisation of the user interface.  Make the UI
+    fit a 1024x768 screen---previously it did not, a most annoying
+    problem!  Make the status bar on top (under the controls).  Allow
+    the UI to be resized correctly (instead of just resizing the status
+    bar!).  Modifications to the window title bar and the About dialog
+    box.  Place the Number of Multi-steps AFTER the Multi-Step button:
+    a more intuitive place for it.  Similarly with the Speed input box
+    and the Walk button.  Rename the Register "Value" column to "Value
+    (Hex)".  Use 0x0A (Unix '\n') to start a new line in the terminal
+    window.
+    [Much of this integrated.]
