@@ -1,6 +1,5 @@
 aclocal.m4
 bin/
 lib/*.so
-config.h.in
 autom4te.cache/
 stamp-h.in
