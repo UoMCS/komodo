@@ -188,7 +188,7 @@ boolean set_options(int argc, char *argv[], boolean*);    /* handling options */
 char   *get_name_string(int *p_argc, char **p_argv[]);
 int     get_number(char*, char**);
 void    append(char*, char*, unsigned int);
-boolean input_line(FILE*, char*, unsigned int); 
+boolean input_line(FILE*, char*, unsigned int);
 
 boolean link_so_handler(char*, boolean, char*);
 void    link_shared_mem(unsigned int, unsigned int, unsigned int);
@@ -430,7 +430,7 @@ boolean verbose;
 char   *my_name;
 pid_t   my_parent;
 
-struct pollfd *SVC_poll;    /* Pointer to allow SVCs to scan input - YUK! @@@ */ 
+struct pollfd *SVC_poll;    /* Pointer to allow SVCs to scan input - YUK! @@@ */
 
 char  *config_filename;
 FILE  *config_handle;
@@ -601,7 +601,7 @@ if (okay)
     vscreen_cc = 100 * r + 10 * g + b;            /* Reassemble clipped value */
     pixel_bytess = (r + g + b + 7) / 8;           /* Find pixel size in bytes */
     vscreen_sizee = vscreen_ww*vscreen_hh*pixel_bytess;/* Frame size excl H/S */
-  
+
     if (init_vscreen(my_name, vscreen_ww, vscreen_hh, vscreen_ss, vscreen_cc,
                      pixel_bytess, vscreen_ll, vscreen_kk, &screen_PID, &shm_ADDR,
                      0, verbose) < 0)
@@ -800,8 +800,8 @@ g_printerr("Helper functions\n");
 g_printerr("~~~~~~~~~~~~~~~~\n");
 g_printerr("The following may be called from within libraries.\n");
 g_printerr("Care should be taken not to set up non-terminating recursive calls.\n");
-g_printerr("Particular facilities (such as a terminal or screen) must be provided\n"); 
-g_printerr("if the appropriate calls are to be made.\n"); 
+g_printerr("Particular facilities (such as a terminal or screen) must be provided\n");
+g_printerr("if the appropriate calls are to be made.\n");
 g_printerr("\n");
 g_printerr("int  get_number(char *string, char **num_end);  // Read an unsigned number from 'string'\n");
 g_printerr("                                                // Returns -1 on error\n");
@@ -2512,7 +2512,7 @@ return go;
 
 int not(int x) { if (x == TRUE) return FALSE; else return TRUE; }
 
-int and(int x, int y) 
+int and(int x, int y)
 {
 if ((x == TRUE) && (y == TRUE)) return TRUE; else return FALSE;
 }
@@ -3028,18 +3028,18 @@ for (i = 0, may_break = FALSE; (i < NO_OF_WATCHPOINTS) && !may_break; i++)
 //
 //if (may_break) fprintf(stderr, "Watchpoint!\n");
 //
-//for (i = 0; i < NO_OF_WATCHPOINTS; i++) 
+//for (i = 0; i < NO_OF_WATCHPOINTS; i++)
 //  {
-//  fprintf(stderr,"====== WATCHPOINT %d ====\n", i); 
-//  fprintf(stderr,"address A: %08x\n",  watchpoints[i].addra); 
+//  fprintf(stderr,"====== WATCHPOINT %d ====\n", i);
+//  fprintf(stderr,"address A: %08x\n",  watchpoints[i].addra);
 //  fprintf(stderr,"address B: %08x\n",  watchpoints[i].addrb);
 //  fprintf(stderr,"Data A: %08x%08x\n", watchpoints[i].dataa[1],
 //                                       watchpoints[i].dataa[0]);
 //  fprintf(stderr,"Data B: %08x%08x\n", watchpoints[i].datab[1],
 //                                       watchpoints[i].datab[0]);
-//  fprintf(stderr,"State: %08x\n",      watchpoints[i].state); 
-//  fprintf(stderr,"Condition: %08X\n",  watchpoints[i].cond); 
-//  fprintf(stderr,"Size: %d\n", watchpoints[i].size); 
+//  fprintf(stderr,"State: %08x\n",      watchpoints[i].state);
+//  fprintf(stderr,"Condition: %08X\n",  watchpoints[i].cond);
+//  fprintf(stderr,"Size: %d\n", watchpoints[i].size);
 //  }
 //
 //
@@ -3104,7 +3104,7 @@ if (distance != 0)
     *cf = (((value >> (distance - 1)) & BIT_0) != 0);
     }
   else
-    {                             /* Make a special case because C is so crap */
+    {                             /* Make a special case because C is so poor */
     result = 0X00000000;
     if (distance == 32) *cf = ((value & BIT_31) != 0);
     else                *cf = (0 != 0);             /* internal "false" value */
@@ -3133,7 +3133,7 @@ if (distance != 0)
     *cf = (((value >> (distance - 1)) & BIT_0) != 0);
     }
   else
-    {                             /* Make a special case because C is so crap */
+    {                             /* Make a special case because C is so poor */
     *cf = ((value & BIT_31) != 0);
     if ((value & BIT_31) == 0) result = 0X00000000;
     else                       result = 0XFFFFFFFF;
@@ -3769,7 +3769,7 @@ return;
 
 /*----------------------------------------------------------------------------*/
 
-// Jesus wept.   What was wrong with "read_mem" and "write_mem"?  @@@
+// What was wrong with "read_mem" and "write_mem"?  @@@
 // If int < 32 bits the whole lot is broken anyway! @@@
 
 
@@ -4579,18 +4579,18 @@ return;
 //    if ((use_vscreen != TRUE) || ((op_code & 0X00FFFFFF) < 0x100)
 //                              || ((op_code & 0X00FFFFFF) > 0x10F))
 //  #endif
-//  
+//
 //    switch (op_code & 0X00FFFFFF)              /* If no VSCREEN or 'normal' SVC */
 //      {
 //      case 0:                              /* Output character R0 (to terminal) */
 //        put_reg(15, get_reg(15, REG_CURRENT) - 8, REG_CURRENT);
 //                                      /* Bodge PC so that stall looks `correct' */
 //        svc_char_out(get_reg(0, REG_CURRENT) & 0XFF);
-//  
+//
 //        if (status != CLIENT_STATE_RESET)
 //          put_reg(15, get_reg(15, REG_CURRENT), REG_CURRENT);     /* Correct PC */
 //        break;
-//  
+//
 //      case 1:                             /* Input character R0 (from terminal) */
 //        {
 //        char c;
@@ -4598,7 +4598,7 @@ return;
 //                                      /* Bodge PC so that stall looks `correct' */
 //        while ((!get_buffer(&terminal0_Rx, &c)) && (status != CLIENT_STATE_RESET))
 //          comm(SVC_poll);
-//  
+//
 //        if (status != CLIENT_STATE_RESET)
 //          {
 //          put_reg(0, c & 0XFF, REG_CURRENT);
@@ -4606,19 +4606,19 @@ return;
 //          }
 //        }
 //        break;
-//  
+//
 //      case 2:                                                           /* Halt */
 //        status = CLIENT_STATE_BYPROG;
 //        break;
-//  
+//
 //      case 3:                                 /* Print string @R0 (to terminal) */
 //        {
 //        unsigned int str_ptr;
 //        char c;
-//  
+//
 //        put_reg(15, get_reg(15, REG_CURRENT) - 8, REG_CURRENT);
 //                                      /* Bodge PC so that stall looks `correct' */
-//  
+//
 //        str_ptr = get_reg(0, REG_CURRENT);
 //        while (((c = read_mem(str_ptr, 1, FALSE, FALSE, MEM_SYSTEM)) != '\0')
 //             && (status != CLIENT_STATE_RESET))
@@ -4626,18 +4626,18 @@ return;
 //          svc_char_out(c);                                  /* Returns if reset */
 //          str_ptr++;
 //          }
-//  
+//
 //        if (status != CLIENT_STATE_RESET)
 //          put_reg(15, get_reg(15, REG_CURRENT), REG_CURRENT);     /* Correct PC */
 //        }
 //        break;
-//  
+//
 //      case 4:                                               /* Decimal print R0 */
 //        {
 //        int svc_dec_print(unsigned int number)    /* Recursive zero suppression */
 //          {
 //          int okay;
-//  
+//
 //          okay = TRUE;
 //          if (number > 0)              /* else nothing - suppress leading zeros */
 //            {
@@ -4646,22 +4646,22 @@ return;
 //            }
 //          return okay;
 //          }
-//  
+//
 //        unsigned int number;
 //        int okay;
-//  
+//
 //        put_reg(15, get_reg(15, REG_CURRENT) - 8, REG_CURRENT);
 //                                      /* Bodge PC so that stall looks `correct' */
-//  
+//
 //        number = get_reg(0, REG_CURRENT);
 //        if (number == 0) okay = svc_char_out('0');  /* Don't suppress last zero */
 //        else             okay = svc_dec_print(number);      /* Returns if reset */
-//  
+//
 //        if (status != CLIENT_STATE_RESET)
 //          put_reg(15, get_reg(15, REG_CURRENT), REG_CURRENT);     /* Correct PC */
 //        }
 //        break;
-//  
+//
 //      default:
 //        if (print_out)
 //          fprintf(stderr, "Untrapped SVC call %06X\n", op_code & 0X00FFFFFF);
@@ -4672,7 +4672,7 @@ return;
 //        put_reg (15, 8, REG_CURRENT);
 //        break;
 //      }
-//  
+//
 //  #ifdef VSCREEN_SUPPORT
 //    else                                        /* Map in VSCREEN support calls */
 //    switch (op_code & 0X00FFFFFF)
@@ -4686,7 +4686,7 @@ return;
 //        int          wr;
 //        int          line;
 //        int          col;
-//  
+//
 //        faddr = get_reg(0, REG_CURRENT);
 //        ip = 0;
 //        for (line = 0; line < IMAGE_HEIGHT; line++)
@@ -4714,7 +4714,7 @@ return;
 //        shm_ADDR[SCR_SZ] |= 0x01;                 /* Trigger outgoing handshake */
 //        }
 //        break;
-//  
+//
 //      case 0x101:                     /* Copy virtual screen to frame in memory */
 //        {                                                /* Frame address in R0 */
 //        unsigned int faddr;
@@ -4722,7 +4722,7 @@ return;
 //        int          line;
 //        int          col;
 //        int          ip;
-//  
+//
 //        /* get new image into buffer */
 //        faddr = get_reg(0, REG_CURRENT);
 //        ip = 0;
@@ -4744,7 +4744,7 @@ return;
 //        shm_ADDR[SCR_SZ] &= 0x7F;                 /*  Clear incoming handshake  */
 //        }
 //        break;
-//  
+//
 //      case 0x102:                            /* Request a new image from screen */
 //        {                                                  /* Request new image */
 //        shm_ADDR[SCR_SZ] |= 0x40;
@@ -4757,14 +4757,14 @@ return;
 //          put_reg(15, get_reg(15, REG_CURRENT), REG_CURRENT);     /* Correct PC */
 //        }
 //        break;
-//  
+//
 //      case 0x104:                               /* Write to virtual screen LEDs */
 //        {                                                         /* Data in R0 */
 //        /* write new data and trigger handshake */
 //        shm_ADDR[LED_SHM] = 0x80 | (get_reg(0, REG_CURRENT) & 0x3F);
 //        }
 //        break;
-//  
+//
 //      case 0x105:                     /* Copy frame in memory to virtual screen */
 //        {     /* R0 frame address                 R1, R2 x, y size of local array
 //                 R3, R4 Screen start coordinates, R5 screen step size           */
@@ -4781,7 +4781,7 @@ return;
 //        int          wr;
 //        int          line;
 //        int          col;
-//  
+//
 //        faddr    = get_reg(0, REG_CURRENT);
 //        image_w  = get_reg(1, REG_CURRENT);
 //        image_h  = get_reg(2, REG_CURRENT);
@@ -4789,7 +4789,7 @@ return;
 //        screen_y = get_reg(4, REG_CURRENT) * HT_RATIO;
 //        step_x   = get_reg(5, REG_CURRENT) * WD_RATIO;
 //        step_y   = get_reg(5, REG_CURRENT) * HT_RATIO;
-//  
+//
 //        for (line = 0; line < image_h; line++)
 //          {
 //          for (col = 0; col < image_w; col++)
@@ -4802,7 +4802,7 @@ return;
 //            {
 //            ip = ((screen_y + step_y * line) * SCR_WIDTH
 //                + (screen_x + step_x * col)) * SCR_NC;
-//  
+//
 //            for (hr = 0; hr < step_y; hr++)
 //              {
 //              if ((screen_y + step_y * line + hr) < SCR_HEIGHT)
@@ -4827,7 +4827,7 @@ return;
 //        shm_ADDR[SCR_SZ] |= 0x01;                 /* Trigger outgoing handshake */
 //        }
 //        break;
-//  
+//
 //      case 0x106:                     /* Copy virtual screen to frame in memory */
 //        {     /* R0 frame address                 R1, R2 x, y size of local array
 //                 R3, R4 Screen start coordinates, R5 screen step size           */
@@ -4842,7 +4842,7 @@ return;
 //        int          line;
 //        int          col;
 //        int          ip;
-//  
+//
 //        /* Get new image into buffer */
 //        faddr    = get_reg(0, REG_CURRENT);
 //        image_w  = get_reg(1, REG_CURRENT);
@@ -4873,7 +4873,7 @@ return;
 //        shm_ADDR[SCR_SZ] &= 0x7F;                   /* Clear incoming handshake */
 //        }
 //        break;
-//  
+//
 //      default:
 //        if (print_out)
 //          fprintf(stderr, "Untrapped SVC call %06X\n", op_code & 0X00FFFFFF);
